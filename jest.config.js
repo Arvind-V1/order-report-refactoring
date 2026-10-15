@@ -4,4 +4,5 @@ module.exports = {
   testMatch: ['**/tests/**/*.test.ts'],
   // ts avant js : legacy/ peut contenir le .js ET le .ts
   moduleFileExtensions: ['ts', 'js', 'json'],
+  globalSetup: '<rootDir>/tests/setupTimezone.js',
 };
