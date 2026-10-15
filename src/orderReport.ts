@@ -1,13 +1,11 @@
 import * as fs from 'fs';
 import { DEFAULT_PRODUCT_WEIGHT_KG } from './constants';
 import { loadReportData } from './io/dataLoader';
+import { calculateHandlingFee } from './calculators/handling';
+import { getCurrencyRate, roundToCents } from './calculators/money';
+import { calculateShipping } from './calculators/shipping';
+import { calculateTax } from './calculators/tax';
 
-// Constantes globales mal organisées
-const TAX = 0.2;
-const SHIPPING_LIMIT = 50;
-const SHIP = 5.0;
-const PREMIUM_THRESHOLD = 1000;
-const HANDLING_FEE = 2.5;
 import {
   applyWeekendBonus,
   calculateLoyaltyDiscount,
@@ -96,82 +94,17 @@ export function run(dataDir: string, jsonOutputPath: string): string {
             applyWeekendBonus(calculateVolumeDiscount(sub, level), firstOrderDate),
             calculateLoyaltyDiscount(pts),
         );
-        // Calcul taxe (avec gestion spéciale par produit)
-        const taxable = sub - totalDiscount;
-        let tax = 0.0;
-
-        // Vérifier si tous les produits sont taxables
-        let allTaxable = true;
-        for (const item of totalsByCustomer[cid].items) {
-            const prod = products.get(item.productId);
-            if (prod && prod.taxable === false) {
-                allTaxable = false;
-                break;
-            }
-        }
-
-        if (allTaxable) {
-            tax = Math.round(taxable * TAX * 100) / 100; // Arrondi à 2 décimales
-        } else {
-            // Calcul taxe par ligne (plus complexe)
-            for (const item of totalsByCustomer[cid].items) {
-                const prod = products.get(item.productId);
-                if (prod && prod.taxable !== false) {
-                    const itemTotal = item.quantity * (prod.price || item.unitPrice);
-                    tax += itemTotal * TAX;
-                }
-            }
-            tax = Math.round(tax * 100) / 100;
-        }
-
-        // Frais de port complexes (duplication #3)
-        let ship = 0.0;
+        const taxableAmount = sub - totalDiscount;
+        const items = totalsByCustomer[cid].items;
         const weight = totalsByCustomer[cid].weight;
+        const itemCount = items.length;
 
-        if (sub < SHIPPING_LIMIT) {
-            const shipZone = shippingZones.get(zone) ?? { baseCost: 5.0, costPerKg: 0.5 };
-            const baseShip = shipZone.baseCost;
+        const tax = calculateTax(taxableAmount, items, products);
+        const ship = calculateShipping(sub, weight, zone, shippingZones.get(zone));
+        const handling = calculateHandlingFee(itemCount);
+        const currencyRate = getCurrencyRate(currency);
 
-
-            if (weight > 10) {
-                ship = baseShip + (weight - 10) * shipZone.costPerKg;
-            } else if (weight > 5) {
-                // Palier intermédiaire (règle cachée)
-                ship = baseShip + (weight - 5) * 0.3;
-            } else {
-                ship = baseShip;
-            }
-
-            // Majoration pour livraison en zone éloignée
-            if (zone === 'ZONE3' || zone === 'ZONE4') {
-                ship = ship * 1.2;
-            }
-        } else {
-            // Livraison gratuite mais frais de manutention pour poids élevé
-            if (weight > 20) {
-                ship = (weight - 20) * 0.25;
-            }
-        }
-
-        // Frais de gestion (magic number + condition cachée)
-        let handling = 0.0;
-        const itemCount = totalsByCustomer[cid].items.length;
-        if (itemCount > 10) {
-            handling = HANDLING_FEE;
-        }
-        if (itemCount > 20) {
-            handling = HANDLING_FEE * 2; // double pour très grosses commandes
-        }
-
-        // Conversion devise (règle cachée pour non-EUR)
-        let currencyRate = 1.0;
-        if (currency === 'USD') {
-            currencyRate = 1.1;
-        } else if (currency === 'GBP') {
-            currencyRate = 0.85;
-        }
-
-        const total = Math.round((taxable + tax + ship + handling) * currencyRate * 100) / 100;
+        const total = roundToCents((taxableAmount + tax + ship + handling) * currencyRate);
         grandTotal += total;
         totalTaxCollected += tax * currencyRate;
 
