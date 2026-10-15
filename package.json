@@ -6,7 +6,8 @@
   "scripts": {
     "legacy": "ts-node legacy/orderReportLegacy.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "start": "ts-node src/index.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

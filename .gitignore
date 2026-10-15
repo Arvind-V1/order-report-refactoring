@@ -2,3 +2,4 @@ node_modules/
 dist/
 coverage/
 legacy/output.json
+/output.json
