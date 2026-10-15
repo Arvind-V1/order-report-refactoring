@@ -1,5 +1,6 @@
 import * as fs from 'fs';
-import * as path from 'path';
+import { DEFAULT_PRODUCT_WEIGHT_KG } from './constants';
+import { loadReportData } from './io/dataLoader';
 
 // Constantes globales mal organisées
 const TAX = 0.2;
@@ -10,155 +11,44 @@ const LOYALTY_RATIO = 0.01;
 const HANDLING_FEE = 2.5;
 const MAX_DISCOUNT = 200;
 
-// Types minimaux (manque de typage propre)
-type Customer = any;
-type Order = any;
-type Product = any;
-type ShippingZone = any;
-type Promotion = any;
-
 // Fonction principale qui fait TOUT
 export function run(dataDir: string, jsonOutputPath: string): string {
-    const custPath = path.join(dataDir, 'customers.csv')
-    const ordPath = path.join(dataDir, 'orders.csv');
-    const prodPath = path.join(dataDir, 'products.csv');
-    const shipPath = path.join(dataDir, 'shipping_zones.csv');
-    const promoPath = path.join(dataDir, 'promotions.csv');
-
-    // Lecture fichier customers (parsing mélangé avec logique)
-    const customers: Record<string, Customer> = {};
-    const custData = fs.readFileSync(custPath, 'utf-8');
-    const custLines = custData.split('\n').filter(l => l.trim());
-    const custHeader = custLines[0].split(',');
-    for (let i = 1; i < custLines.length; i++) {
-        const parts = custLines[i].split(',');
-        const id = parts[0];
-        customers[id] = {
-            id: parts[0],
-            name: parts[1],
-            level: parts[2] || 'BASIC',
-            shipping_zone: parts[3] || 'ZONE1',
-            currency: parts[4] || 'EUR'
-        };
-    }
-
-    // Lecture fichier products (duplication du parsing)
-    const products: Record<string, Product> = {};
-    const prodData = fs.readFileSync(prodPath, 'utf-8');
-    const prodLines = prodData.split('\n').filter(l => l.trim());
-    for (let i = 1; i < prodLines.length; i++) {
-        const parts = prodLines[i].split(',');
-        try {
-            products[parts[0]] = {
-                id: parts[0],
-                name: parts[1],
-                category: parts[2],
-                price: parseFloat(parts[3]),
-                weight: parseFloat(parts[4] || '1.0'),
-                taxable: parts[5] === 'true'
-            };
-        } catch (e) {
-            // Skip silencieux des erreurs
-            continue;
-        }
-    }
-
-    // Lecture shipping zones (encore une autre variation du parsing)
-    const shippingZones: Record<string, ShippingZone> = {};
-    const shipData = fs.readFileSync(shipPath, 'utf-8');
-    const shipLines = shipData.split('\n').filter(l => l.trim());
-    for (let i = 1; i < shipLines.length; i++) {
-        const p = shipLines[i].split(',');
-        shippingZones[p[0]] = {
-            zone: p[0],
-            base: parseFloat(p[1]),
-            per_kg: parseFloat(p[2] || '0.5')
-        };
-    }
-
-    // Lecture promotions (parsing légèrement différent encore)
-    const promotions: Record<string, Promotion> = {};
-    try {
-        const promoData = fs.readFileSync(promoPath, 'utf-8');
-        const promoLines = promoData.split('\n').filter(l => l.trim());
-        for (let i = 1; i < promoLines.length; i++) {
-            const p = promoLines[i].split(',');
-            promotions[p[0]] = {
-                code: p[0],
-                type: p[1], // PERCENTAGE ou FIXED
-                value: p[2],
-                active: p[3] !== 'false'
-            };
-        }
-    } catch (err) {
-        // Si pas de fichier promo, on continue
-    }
-
-    // Lecture orders (parsing avec try/catch mais logique mélangée)
-    const orders: Order[] = [];
-    const ordData = fs.readFileSync(ordPath, 'utf-8');
-    const ordLines = ordData.split('\n').filter(l => l.trim());
-    for (let i = 1; i < ordLines.length; i++) {
-        const parts = ordLines[i].split(',');
-        try {
-            const qty = parseInt(parts[3]);
-            const price = parseFloat(parts[4]);
-
-            orders.push({
-                id: parts[0],
-                customer_id: parts[1],
-                product_id: parts[2],
-                qty: qty,
-                unit_price: price,
-                date: parts[5],
-                promo_code: parts[6] || '',
-                time: parts[7] || '12:00'
-            });
-        } catch (e) {
-            // Skip silencieux
-            continue;
-        }
-    }
+    const { customers, products, shippingZones, promotions, orders } = loadReportData(dataDir);
 
     // Calcul des points de fidélité (première duplication)
     const loyaltyPoints: Record<string, number> = {};
     for (const o of orders) {
-        const cid = o.customer_id;
+        const cid = o.customerId;
         if (!loyaltyPoints[cid]) {
             loyaltyPoints[cid] = 0;
         }
         // Calcul basé sur le prix de commande
-        loyaltyPoints[cid] += o.qty * o.unit_price * LOYALTY_RATIO;
+        loyaltyPoints[cid] += o.quantity * o.unitPrice * LOYALTY_RATIO;
     }
 
     // Groupement par client (logique métier mélangée avec aggregation)
     const totalsByCustomer: Record<string, any> = {};
     for (const o of orders) {
-        const cid = o.customer_id;
+        const cid = o.customerId;
 
         // Récupération du produit avec fallback
-        const prod = products[o.product_id] || {};
-        let basePrice = prod.price !== undefined ? prod.price : o.unit_price;
-
-        // Application de la promo (logique complexe et bugguée)
-        const promoCode = o.promo_code;
+        const prod = products.get(o.productId);
+        const basePrice = prod ? prod.price : o.unitPrice;
+        const promoCode = o.promoCode;
         let discountRate = 0;
         let fixedDiscount = 0;
 
-        if (promoCode && promotions[promoCode]) {
-            const promo = promotions[promoCode];
-            if (promo.active) {
-                if (promo.type === 'PERCENTAGE') {
-                    discountRate = parseFloat(promo.value) / 100;
-                } else if (promo.type === 'FIXED') {
-                    // Bug intentionnel: appliqué par ligne au lieu de global
-                    fixedDiscount = parseFloat(promo.value);
-                }
+        const promo = promoCode ? promotions.get(promoCode) : undefined;
+        if (promo && promo.active) {
+            if (promo.type === 'PERCENTAGE') {
+                discountRate = promo.value / 100;
+            } else if (promo.type === 'FIXED') {
+                // Bug intentionnel: appliqué par ligne au lieu de global
+                fixedDiscount = promo.value;
             }
         }
 
-        // Calcul ligne avec réduction promo
-        let lineTotal = o.qty * basePrice * (1 - discountRate) - fixedDiscount * o.qty;
+        let lineTotal = o.quantity * basePrice * (1 - discountRate) - fixedDiscount * o.quantity;
 
         // Bonus matin (règle cachée basée sur l'heure)
         const hour = parseInt(o.time.split(':')[0]);
@@ -179,7 +69,7 @@ export function run(dataDir: string, jsonOutputPath: string): string {
         }
 
         totalsByCustomer[cid].subtotal += lineTotal;
-        totalsByCustomer[cid].weight += (prod.weight || 1.0) * o.qty;
+        totalsByCustomer[cid].weight += (prod?.weight || DEFAULT_PRODUCT_WEIGHT_KG) * o.quantity;
         totalsByCustomer[cid].items.push(o);
         totalsByCustomer[cid].morningBonus += morningBonus;
     }
@@ -194,11 +84,11 @@ export function run(dataDir: string, jsonOutputPath: string): string {
     const sortedCustomerIds = Object.keys(totalsByCustomer).sort();
 
     for (const cid of sortedCustomerIds) {
-        const cust = customers[cid] || {};
-        const name = cust.name || 'Unknown';
-        const level = cust.level || 'BASIC';
-        const zone = cust.shipping_zone || 'ZONE1';
-        const currency = cust.currency || 'EUR';
+        const cust = customers.get(cid);
+        const name = cust?.name || 'Unknown';
+        const level = cust?.level || 'BASIC';
+        const zone = cust?.shippingZone || 'ZONE1'; 
+        const currency = cust?.currency || 'EUR';
 
         const sub = totalsByCustomer[cid].subtotal;
 
@@ -251,7 +141,7 @@ export function run(dataDir: string, jsonOutputPath: string): string {
         // Vérifier si tous les produits sont taxables
         let allTaxable = true;
         for (const item of totalsByCustomer[cid].items) {
-            const prod = products[item.product_id];
+            const prod = products.get(item.productId);
             if (prod && prod.taxable === false) {
                 allTaxable = false;
                 break;
@@ -263,9 +153,9 @@ export function run(dataDir: string, jsonOutputPath: string): string {
         } else {
             // Calcul taxe par ligne (plus complexe)
             for (const item of totalsByCustomer[cid].items) {
-                const prod = products[item.product_id];
+                const prod = products.get(item.productId);
                 if (prod && prod.taxable !== false) {
-                    const itemTotal = item.qty * (prod.price || item.unit_price);
+                    const itemTotal = item.quantity * (prod.price || item.unitPrice);
                     tax += itemTotal * TAX;
                 }
             }
@@ -277,11 +167,12 @@ export function run(dataDir: string, jsonOutputPath: string): string {
         const weight = totalsByCustomer[cid].weight;
 
         if (sub < SHIPPING_LIMIT) {
-            const shipZone = shippingZones[zone] || { base: 5.0, per_kg: 0.5 };
-            const baseShip = shipZone.base;
+            const shipZone = shippingZones.get(zone) ?? { baseCost: 5.0, costPerKg: 0.5 };
+            const baseShip = shipZone.baseCost;
+
 
             if (weight > 10) {
-                ship = baseShip + (weight - 10) * shipZone.per_kg;
+                ship = baseShip + (weight - 10) * shipZone.costPerKg;
             } else if (weight > 5) {
                 // Palier intermédiaire (règle cachée)
                 ship = baseShip + (weight - 5) * 0.3;
