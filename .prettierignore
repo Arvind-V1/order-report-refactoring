@@ -1,0 +1,6 @@
+legacy/
+dist/
+coverage/
+node_modules/
+package-lock.json
+output.json
