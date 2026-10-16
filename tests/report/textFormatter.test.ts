@@ -22,14 +22,14 @@ describe('formatReport', () => {
     expect(formatReport([buildReportFixture()])).toBe(expected);
   });
 
-  it('affiche le bonus matin seulement s\'il est positif', () => {
+  it("affiche le bonus matin seulement s'il est positif", () => {
     expect(formatReport([buildReportFixture({ morningBonus: 3.214 })])).toContain(
       '  - Loyalty discount: 0.00\n  - Morning bonus: 3.21\nTax: 19.00',
     );
     expect(formatReport([buildReportFixture()])).not.toContain('Morning bonus');
   });
 
-  it('affiche les frais de gestion seulement s\'ils sont positifs', () => {
+  it("affiche les frais de gestion seulement s'ils sont positifs", () => {
     const output = formatReport([buildReportFixture({ handling: 2.5, itemCount: 12 })]);
 
     expect(output).toContain('Shipping (ZONE1, 3.0kg): 0.00\nHandling (12 items): 2.50\nTotal:');
@@ -48,4 +48,4 @@ describe('formatReport', () => {
   it('retourne seulement le récapitulatif sans client', () => {
     expect(formatReport([])).toBe('Grand Total: 0.00 EUR\nTotal Tax Collected: 0.00 EUR');
   });
-}); 
+});

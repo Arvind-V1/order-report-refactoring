@@ -23,7 +23,10 @@ export default tseslint.config(
   {
     files: ['src/**/*.ts'],
     rules: {
-      'max-lines-per-function': ['error', { max: MAX_FUNCTION_LINES, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': [
+        'error',
+        { max: MAX_FUNCTION_LINES, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   {

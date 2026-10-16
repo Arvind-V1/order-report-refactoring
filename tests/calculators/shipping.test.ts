@@ -24,7 +24,7 @@ describe('calculateShipping sous le seuil de livraison offerte', () => {
 });
 
 describe('calculateShipping à partir du seuil de livraison offerte', () => {
-  it('est gratuit jusqu\'à 20 kg', () => {
+  it("est gratuit jusqu'à 20 kg", () => {
     expect(calculateShipping(50, 20, 'ZONE1', undefined)).toBe(0);
   });
 

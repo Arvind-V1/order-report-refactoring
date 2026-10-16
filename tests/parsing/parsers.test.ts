@@ -9,7 +9,10 @@ import {
 
 describe('parseCsvRows', () => {
   it("ignore l'en-tête et les lignes vides", () => {
-    expect(parseCsvRows('a,b\n1,2\n\n3,4\n')).toEqual([['1', '2'], ['3', '4']]);
+    expect(parseCsvRows('a,b\n1,2\n\n3,4\n')).toEqual([
+      ['1', '2'],
+      ['3', '4'],
+    ]);
   });
 
   it('conserve le \\r du CRLF dans le dernier champ (comportement legacy)', () => {
@@ -64,7 +67,7 @@ describe('parsePromotions', () => {
 });
 
 describe('parseOrders', () => {
-  it('applique le code promo et l\'heure par défaut', () => {
+  it("applique le code promo et l'heure par défaut", () => {
     const [order] = parseOrders('h\nO1,C001,P001,2,10.5,2025-01-15\n');
 
     expect(order).toEqual({

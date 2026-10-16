@@ -3,7 +3,13 @@ import { Customer } from '../../src/models';
 import { buildCustomerReport, CustomerReportInput } from '../../src/report/customerReport';
 import { buildOrder, buildProduct } from '../helpers/builders';
 
-const CUSTOMER: Customer = { id: 'C001', name: 'Alice', level: 'BASIC', shippingZone: 'ZONE1', currency: 'EUR' };
+const CUSTOMER: Customer = {
+  id: 'C001',
+  name: 'Alice',
+  level: 'BASIC',
+  shippingZone: 'ZONE1',
+  currency: 'EUR',
+};
 
 function buildTotals(overrides: Partial<CustomerTotals> = {}): CustomerTotals {
   return { subtotal: 100, weightKg: 3, morningBonus: 0, items: [buildOrder()], ...overrides };
@@ -50,7 +56,7 @@ describe('buildCustomerReport', () => {
     expect(report.total).toBeCloseTo(114);
   });
 
-  it('arrondit les points de fidélité à l\'entier inférieur', () => {
+  it("arrondit les points de fidélité à l'entier inférieur", () => {
     expect(buildCustomerReport(buildInput({ rawLoyaltyPoints: 12.9 })).loyaltyPoints).toBe(12);
   });
 

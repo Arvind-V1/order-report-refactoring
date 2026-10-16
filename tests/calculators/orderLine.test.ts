@@ -31,13 +31,17 @@ describe('priceOrderLine', () => {
   it('applique une promotion en pourcentage', () => {
     const promotion = buildPromotion({ type: 'PERCENTAGE', value: 10 });
 
-    expect(priceOrderLine(buildOrder({ quantity: 2 }), buildProduct({ price: 50 }), promotion).total).toBeCloseTo(90);
+    expect(
+      priceOrderLine(buildOrder({ quantity: 2 }), buildProduct({ price: 50 }), promotion).total,
+    ).toBeCloseTo(90);
   });
 
   it('déduit une promotion fixe par unité et non par ligne (bug legacy préservé)', () => {
     const promotion = buildPromotion({ type: 'FIXED', value: 2 });
 
-    expect(priceOrderLine(buildOrder({ quantity: 3 }), buildProduct({ price: 10 }), promotion).total).toBe(24);
+    expect(priceOrderLine(buildOrder({ quantity: 3 }), buildProduct({ price: 10 }), promotion).total).toBe(
+      24,
+    );
   });
 
   it('ignore une promotion inactive ou de type inconnu', () => {
@@ -54,7 +58,7 @@ describe('priceOrderLine', () => {
     expect(line.total).toBeCloseTo(97);
   });
 
-  it('n\'accorde pas le bonus matin à partir de 10 h', () => {
+  it("n'accorde pas le bonus matin à partir de 10 h", () => {
     expect(priceOrderLine(buildOrder({ time: '10:00' }), buildProduct(), undefined).morningBonus).toBe(0);
   });
 

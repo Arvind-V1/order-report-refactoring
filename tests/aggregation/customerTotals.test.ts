@@ -32,7 +32,11 @@ describe('aggregateOrdersByCustomer', () => {
   });
 
   it('cumule le bonus matin du client', () => {
-    const orders = [buildOrder({ time: '09:00' }), buildOrder({ time: '09:30' }), buildOrder({ time: '15:00' })];
+    const orders = [
+      buildOrder({ time: '09:00' }),
+      buildOrder({ time: '09:30' }),
+      buildOrder({ time: '15:00' }),
+    ];
 
     expect(aggregateOrdersByCustomer(orders, PRODUCTS, new Map()).get('C001')?.morningBonus).toBeCloseTo(0.6);
   });
@@ -41,7 +45,11 @@ describe('aggregateOrdersByCustomer', () => {
 describe('sortByCustomerId', () => {
   it('trie par identifiant client', () => {
     const totals = aggregateOrdersByCustomer(
-      [buildOrder({ customerId: 'C010' }), buildOrder({ customerId: 'C002' }), buildOrder({ customerId: 'C001' })],
+      [
+        buildOrder({ customerId: 'C010' }),
+        buildOrder({ customerId: 'C002' }),
+        buildOrder({ customerId: 'C001' }),
+      ],
       PRODUCTS,
       new Map(),
     );

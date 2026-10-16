@@ -33,7 +33,7 @@ describe('calculateVolumeDiscount', () => {
     expect(calculateVolumeDiscount(subtotal, 'BASIC')).toBeCloseTo(expected, 10);
   });
 
-  it('ne donne le palier 20 % qu\'aux PREMIUM au-dessus de 1000', () => {
+  it("ne donne le palier 20 % qu'aux PREMIUM au-dessus de 1000", () => {
     expect(calculateVolumeDiscount(2000, 'PREMIUM')).toBeCloseTo(400);
     expect(calculateVolumeDiscount(2000, 'BASIC')).toBeCloseTo(300);
     expect(calculateVolumeDiscount(1000, 'PREMIUM')).toBeCloseTo(150);

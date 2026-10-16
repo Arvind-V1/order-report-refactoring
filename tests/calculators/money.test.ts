@@ -21,7 +21,7 @@ describe('getCurrencyRate', () => {
     expect(getCurrencyRate('USD\r')).toBe(1);
   });
 
-  it('ne se laisse pas piéger par un nom de propriété d\'objet', () => {
+  it("ne se laisse pas piéger par un nom de propriété d'objet", () => {
     expect(getCurrencyRate('constructor')).toBe(1);
   });
 });

@@ -15,7 +15,6 @@ const PRODUCTS_FILE = 'products.csv';
 const SHIPPING_ZONES_FILE = 'shipping_zones.csv';
 const PROMOTIONS_FILE = 'promotions.csv';
 
-
 function readCsv(dataDir: string, fileName: string): string {
   return fs.readFileSync(path.join(dataDir, fileName), 'utf-8');
 }

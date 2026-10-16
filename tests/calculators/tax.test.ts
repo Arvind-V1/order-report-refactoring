@@ -7,8 +7,15 @@ function buildProduct(overrides: Partial<Product>): Product {
 
 function buildOrder(overrides: Partial<Order>): Order {
   return {
-    id: 'O1', customerId: 'C001', productId: 'P1', quantity: 1, unitPrice: 10,
-    date: '2025-01-15', promoCode: '', time: '12:00', ...overrides,
+    id: 'O1',
+    customerId: 'C001',
+    productId: 'P1',
+    quantity: 1,
+    unitPrice: 10,
+    date: '2025-01-15',
+    promoCode: '',
+    time: '12:00',
+    ...overrides,
   };
 }
 
@@ -29,7 +36,7 @@ describe('calculateTax', () => {
     expect(calculateTax(33.33, [buildOrder({})], products)).toBe(6.67);
   });
 
-  it('ne taxe que les lignes taxables si un produit ne l\'est pas', () => {
+  it("ne taxe que les lignes taxables si un produit ne l'est pas", () => {
     const products = indexProducts(
       buildProduct({ id: 'P1', price: 10 }),
       buildProduct({ id: 'P2', price: 100, taxable: false }),
@@ -55,7 +62,10 @@ describe('calculateTax', () => {
       buildProduct({ id: 'P1', price: 0 }),
       buildProduct({ id: 'P2', taxable: false }),
     );
-    const items = [buildOrder({ productId: 'P1', quantity: 1, unitPrice: 50 }), buildOrder({ productId: 'P2' })];
+    const items = [
+      buildOrder({ productId: 'P1', quantity: 1, unitPrice: 50 }),
+      buildOrder({ productId: 'P2' }),
+    ];
 
     expect(calculateTax(100, items, products)).toBe(10);
   });
