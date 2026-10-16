@@ -1,11 +1,13 @@
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
+import { loadReportData } from '../src/io/dataLoader';
+import { generateReport, GeneratedReport } from '../src/orderReport';
+import { serializeJsonExport } from '../src/report/jsonExport';
 import { run as runLegacy } from '../legacy/orderReportLegacy';
-import { run as runRefactored } from '../src/orderReport';
 
 const DATA_DIR = path.join(__dirname, '..', 'legacy', 'data');
 const EXPECTED_PATH = path.join(__dirname, '..', 'legacy', 'expected', 'report.txt');
+const LEGACY_JSON_PATH = path.join(__dirname, '..', 'legacy', 'output.json');
 
 function withoutConsoleOutput<T>(action: () => T): T {
   const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -25,18 +27,25 @@ function readOrRecordReference(legacyReport: string): string {
 }
 
 describe('Golden master', () => {
-  it('le legacy produit exactement la sortie de référence', () => {
-    const legacyReport = withoutConsoleOutput(() => runLegacy());
+  let legacyReport: string;
+  let legacyJson: string;
+  let refactored: GeneratedReport;
 
+  beforeAll(() => {
+    legacyReport = withoutConsoleOutput(() => runLegacy());
+    legacyJson = fs.readFileSync(LEGACY_JSON_PATH, 'utf-8');
+    refactored = generateReport(loadReportData(DATA_DIR));
+  });
+
+  it('le legacy produit exactement la sortie de référence', () => {
     expect(legacyReport).toBe(readOrRecordReference(legacyReport));
   });
 
   it('le code refactoré produit exactement la sortie de référence', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'order-report-'));
-    const jsonOutputPath = path.join(tmpDir, 'output.json');
+    expect(refactored.text).toBe(fs.readFileSync(EXPECTED_PATH, 'utf-8'));
+  });
 
-    const report = withoutConsoleOutput(() => runRefactored(DATA_DIR, jsonOutputPath));
-
-    expect(report).toBe(fs.readFileSync(EXPECTED_PATH, 'utf-8'));
+  it('le code refactoré produit exactement le même export JSON que le legacy', () => {
+    expect(serializeJsonExport(refactored.json)).toBe(legacyJson);
   });
 });

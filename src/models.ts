@@ -38,3 +38,11 @@ export interface Order {
   promoCode: string;
   time: string;
 }
+
+export interface ReportData {
+  customers: Map<string, Customer>;
+  products: Map<string, Product>;
+  shippingZones: Map<string, ShippingZone>;
+  promotions: Map<string, Promotion>;
+  orders: Order[];
+}

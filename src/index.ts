@@ -1,7 +1,12 @@
 import * as path from 'path';
-import { run } from './orderReport';
+import { loadReportData } from './io/dataLoader';
+import { printReport, writeJsonExport } from './io/reportWriter';
+import { generateReport } from './orderReport';
+import { serializeJsonExport } from './report/jsonExport';
 
 const DATA_DIR = path.join(__dirname, '..', 'legacy', 'data');
 const JSON_OUTPUT_PATH = path.join(__dirname, '..', 'output.json');
 
-run(DATA_DIR, JSON_OUTPUT_PATH);
+const report = generateReport(loadReportData(DATA_DIR));
+printReport(report.text);
+writeJsonExport(JSON_OUTPUT_PATH, serializeJsonExport(report.json));

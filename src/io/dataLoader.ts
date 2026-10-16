@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Customer, Order, Product, Promotion, ShippingZone } from '../models';
+import { Customer, Order, Product, Promotion, ReportData, ShippingZone } from '../models';
 import {
   parseCustomers,
   parseOrders,
@@ -15,13 +15,6 @@ const PRODUCTS_FILE = 'products.csv';
 const SHIPPING_ZONES_FILE = 'shipping_zones.csv';
 const PROMOTIONS_FILE = 'promotions.csv';
 
-export interface ReportData {
-  customers: Map<string, Customer>;
-  products: Map<string, Product>;
-  shippingZones: Map<string, ShippingZone>;
-  promotions: Map<string, Promotion>;
-  orders: Order[];
-}
 
 function readCsv(dataDir: string, fileName: string): string {
   return fs.readFileSync(path.join(dataDir, fileName), 'utf-8');
