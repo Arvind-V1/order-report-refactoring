@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Customer, Order, Product, Promotion, ReportData, ShippingZone } from '../models';
+import { ReportData } from '../models';
 import {
   parseCustomers,
   parseOrders,
