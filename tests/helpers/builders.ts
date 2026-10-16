@@ -1,4 +1,5 @@
 import { Order, Product, Promotion } from '../../src/models';
+import { CustomerReport } from '../../src/report/customerReport';
 
 export function buildOrder(overrides: Partial<Order> = {}): Order {
   return {
@@ -20,4 +21,27 @@ export function buildProduct(overrides: Partial<Product> = {}): Product {
 
 export function buildPromotion(overrides: Partial<Promotion> = {}): Promotion {
   return { code: 'PROMO', type: 'PERCENTAGE', value: 10, active: true, ...overrides };
+}
+
+export function buildReportFixture(overrides: Partial<CustomerReport> = {}): CustomerReport {
+  return {
+    customerId: 'C001',
+    name: 'Alice',
+    level: 'BASIC',
+    zone: 'ZONE1',
+    currency: 'EUR',
+    subtotal: 100,
+    totalDiscount: 5,
+    volumeDiscount: 5,
+    loyaltyDiscount: 0,
+    morningBonus: 0,
+    tax: 19,
+    shipping: 0,
+    weightKg: 3,
+    handling: 0,
+    itemCount: 1,
+    total: 114,
+    loyaltyPoints: 1,
+    ...overrides,
+  };
 }
